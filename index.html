@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wusyaname — Temukan Teman, Bangun Koneksi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --c-bg:       #05040f;
+      --c-surface:  #0d0b1e;
+      --c-card:     rgba(255,255,255,.045);
+      --c-border:   rgba(255,255,255,.08);
+      --c-blue:     #4f7aff;
+      --c-indigo:   #7c5cfc;
+      --c-violet:   #a855f7;
+      --c-pink:     #ec4899;
+      --c-text:     #e8e4ff;
+      --c-muted:    rgba(232,228,255,.5);
+      --g-main:     linear-gradient(135deg,#4f7aff 0%,#7c5cfc 50%,#a855f7 100%);
+      --g-soft:     linear-gradient(135deg,rgba(79,122,255,.15),rgba(168,85,247,.15));
+      --radius-sm:  10px;
+      --radius-md:  18px;
+      --radius-lg:  28px;
+      --radius-xl:  40px;
+      --shadow-glow:0 0 60px rgba(124,92,252,.25);
+      --shadow-card:0 8px 32px rgba(0,0,0,.4);
+      --t: all .3s cubic-bezier(.4,0,.2,1);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--c-bg);
+      color: var(--c-text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    h1,h2,h3,h4 { font-family:'Syne',sans-serif; line-height:1.15; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    ::selection { background: rgba(124,92,252,.35); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--c-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--c-indigo); border-radius: 99px; }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content:'';
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: .4;
+    }
+
+    /* ── Utility ── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    .gradient-text {
+      background: var(--g-main);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .btn {
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 14px 30px; border-radius: 99px;
+      font-family:'Syne',sans-serif; font-weight:600; font-size:.95rem;
+      cursor:pointer; border:none; transition: var(--t);
+    }
+    .btn-primary {
+      background: var(--g-main);
+      color:#fff;
+      box-shadow: 0 4px 24px rgba(124,92,252,.4);
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(124,92,252,.55); }
+    .btn-ghost {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      color: var(--c-text);
+      backdrop-filter: blur(12px);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.08); transform:translateY(-2px); }
+    .tag {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 14px; border-radius:99px;
+      font-size:.78rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+      background: rgba(124,92,252,.15);
+      border: 1px solid rgba(124,92,252,.3);
+      color: #b79cff;
+    }
+    .section-head { text-align:center; margin-bottom:64px; }
+    .section-head h2 { font-size:clamp(2rem,4vw,2.8rem); margin-top:12px; margin-bottom:16px; }
+    .section-head p { color: var(--c-muted); max-width:560px; margin:0 auto; font-size:1.05rem; }
+
+    /* ── Ambient blobs ── */
+    .blob {
+      position:absolute; border-radius:50%;
+      filter:blur(90px); pointer-events:none; z-index:0;
+    }
+
+    /* ══════════════ NAVBAR ══════════════ */
+    #navbar {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      padding: 18px 0;
+      transition: var(--t);
+    }
+    #navbar.scrolled {
+      background: rgba(5,4,15,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--c-border);
+      padding: 12px 0;
+    }
+    .nav-inner {
+      display:flex; align-items:center; justify-content:space-between; gap:32px;
+    }
+    .nav-logo {
+      font-family:'Syne',sans-serif; font-weight:800; font-size:1.35rem;
+      background: var(--g-main);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .nav-links { display:flex; gap:32px; list-style:none; }
+    .nav-links a {
+      font-size:.9rem; font-weight:500; color: var(--c-muted);
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--c-text); }
+    .nav-cta { display:flex; gap:10px; align-items:center; }
+    .burger { display:none; flex-direction:column; gap:5px; cursor:pointer; background:none; border:none; padding:4px; }
+    .burger span { display:block; width:22px; height:2px; background:var(--c-text); border-radius:2px; transition:var(--t); }
+    .mobile-menu {
+      display:none; position:fixed; inset:0; top:64px;
+      background:rgba(5,4,15,.97); backdrop-filter:blur(20px);
+      flex-direction:column; align-items:center; justify-content:center;
+      gap:32px; z-index:99;
+    }
+    .mobile-menu.open { display:flex; }
+    .mobile-menu a { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; color:var(--c-muted); }
+    .mobile-menu a:hover { color:var(--c-text); }
+
+    /* ══════════════ HERO ══════════════ */
+    #hero {
+      position:relative; min-height:100vh;
+      display:flex; align-items:center;
+      overflow:hidden; padding-top:100px;
+    }
+    .hero-blob-1 { width:600px; height:600px; background:#4f7aff; opacity:.18; top:-100px; right:-150px; }
+    .hero-blob-2 { width:500px; height:500px; background:#a855f7; opacity:.15; bottom:-100px; left:-100px; }
+    .hero-content {
+      position:relative; z-index:1;
+      display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
+    }
+    .hero-eyebrow { display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+    .hero-eyebrow .dot { width:8px; height:8px; border-radius:50%; background:var(--c-blue); animation:pulse 2s infinite; }
+    .hero-eyebrow span { font-size:.85rem; font-weight:600; color:var(--c-blue); letter-spacing:.05em; text-transform:uppercase; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(79,122,255,.5)} 50%{box-shadow:0 0 0 8px rgba(79,122,255,0)} }
+    .hero-title { font-size:clamp(2.6rem,5.5vw,4.2rem); font-weight:800; margin-bottom:22px; }
+    .hero-title em { font-style:normal; }
+    .hero-desc { font-size:1.1rem; color:var(--c-muted); max-width:480px; margin-bottom:36px; }
+    .hero-actions { display:flex; gap:14px; flex-wrap:wrap; }
+    .hero-stats {
+      display:flex; gap:32px; margin-top:48px; padding-top:40px;
+      border-top:1px solid var(--c-border);
+    }
+    .stat-item { }
+    .stat-num { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; }
+    .stat-label { font-size:.82rem; color:var(--c-muted); margin-top:2px; }
+
+    /* ── Hero visual (mock app UI) ── */
+    .hero-visual { position:relative; }
+    .phone-wrap {
+      position:relative; width:280px; margin:0 auto;
+    }
+    .phone-card {
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--c-border);
+      border-radius:32px;
+      padding:20px;
+      backdrop-filter:blur(24px);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
+    .phone-header {
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;
+    }
+    .phone-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:.95rem; background:var(--g-main); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .phone-notif { width:8px; height:8px; border-radius:50%; background:#4ade80; }
+    .match-card {
+      border-radius:20px; padding:16px; margin-bottom:12px;
+      background:var(--g-soft); border:1px solid var(--c-border);
+    }
+    .match-row { display:flex; align-items:center; gap:12px; }
+    .avatar {
+      width:44px; height:44px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.2rem; font-weight:700; font-family:'Syne',sans-serif;
+    }
+    .av-1 { background:linear-gradient(135deg,#4f7aff,#7c5cfc); }
+    .av-2 { background:linear-gradient(135deg,#ec4899,#a855f7); }
+    .av-3 { background:linear-gradient(135deg,#06b6d4,#4f7aff); }
+    .match-info { flex:1; }
+    .match-name { font-family:'Syne',sans-serif; font-weight:700; font-size:.9rem; }
+    .match-tags { display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
+    .m-tag { font-size:.68rem; padding:2px 7px; border-radius:99px; background:rgba(124,92,252,.2); color:#b79cff; }
+    .match-score { font-family:'Syne',sans-serif; font-weight:800; font-size:.85rem; color:#4ade80; }
+    .floating-card {
+      position:absolute; border-radius:var(--radius-md); padding:12px 16px;
+      background:rgba(13,11,30,.9); border:1px solid var(--c-border);
+      backdrop-filter:blur(16px); box-shadow:var(--shadow-card);
+      animation: float2 5s ease-in-out infinite;
+    }
+    @keyframes float2 { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-10px) rotate(-2deg)} }
+    .fc-left { left:-80px; top:80px; animation-delay:-2s; }
+    .fc-right { right:-70px; bottom:100px; animation-delay:-1s; }
+    .fc-content { display:flex; align-items:center; gap:8px; }
+    .fc-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.9rem; }
+    .fc-icon.blue { background:rgba(79,122,255,.2); color:#4f7aff; }
+    .fc-icon.green { background:rgba(74,222,128,.15); color:#4ade80; }
+    .fc-text .num { font-family:'Syne',sans-serif; font-weight:800; font-size:.95rem; }
+    .fc-text .lbl { font-size:.7rem; color:var(--c-muted); }
+
+    /* Fade-in observer */
+    .fade-up { opacity:0; transform:translateY(32px); transition:opacity .7s ease, transform .7s ease; }
+    .fade-up.visible { opacity:1; transform:translateY(0); }
+
+    /* ══════════════ ABOUT ══════════════ */
+    #about { padding:120px 0; position:relative; }
+    .about-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center;
+    }
+    .about-visual { position:relative; }
+    .about-orb {
+      width:340px; height:340px; border-radius:50%; margin:0 auto;
+      background:var(--g-main); opacity:.12; filter:blur(60px);
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    }
+    .about-icon-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:16px; position:relative; z-index:1;
+    }
+    .aig-card {
+      background:var(--c-card); border:1px solid var(--c-border);
+      border-radius:var(--radius-md); padding:24px;
+      backdrop-filter:blur(12px); transition:var(--t);
+    }
+    .aig-card:hover { background:rgba(255,255,255,.07); transform:translateY(-4px); }
+    .aig-card i { font-size:1.5rem; margin-bottom:12px; }
+    .aig-card h4 { font-size:.95rem; font-weight:700; margin-bottom:4px; }
+    .aig-card p { font-size:.82rem; color:var(--c-muted); }
+    .about-text .tag { margin-bottom:16px; }
+    .about-text h2 { font-size:clamp(1.8rem,3.5vw,2.5rem); margin-bottom:18px; }
+    .about-text p { color:var(--c-muted); margin-bottom:24px; font-size:1.02rem; }
+    .about-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
+    .about-list li { display:flex; align-items:center; gap:10px; font-size:.95rem; }
+    .about-list li i { color:#4ade80; font-size:.8rem; }
+
+    /* ══════════════ FEATURES ══════════════ */
+    #features { padding:120px 0; position:relative; overflow:hidden; }
+    .feat-bg {
+      position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(ellipse 80% 60% at 50% 50%, rgba(79,122,255,.06), transparent);
+    }
+    .features-grid {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:24px;
+    }
+    .feat-card {
+      background:var(--c-card); border:1px solid var(--c-border);
+      border-radius:var(--radius-lg); padding:32px;
+      backdrop-filter:blur(16px);
+      transition: var(--t);
+      position:relative; overflow:hidden;
+    }
+    .feat-card::before {
+      content:''; position:absolute; inset:0; opacity:0;
+      background:var(--g-soft); transition:opacity .4s;
+    }
+    .feat-card:hover { transform:translateY(-6px); border-color:rgba(124,92,252,.25); box-shadow:var(--shadow-glow); }
+    .feat-card:hover::before { opacity:1; }
+    .feat-card.featured { grid-column:span 2; }
+    .feat-icon-wrap {
+      width:52px; height:52px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; margin-bottom:20px; position:relative; z-index:1;
+    }
+    .fi-blue   { background:rgba(79,122,255,.2);  color:#4f7aff; }
+    .fi-violet { background:rgba(124,92,252,.2);  color:#7c5cfc; }
+    .fi-pink   { background:rgba(236,72,153,.2);  color:#ec4899; }
+    .fi-cyan   { background:rgba(6,182,212,.2);   color:#06b6d4; }
+    .fi-green  { background:rgba(74,222,128,.15); color:#4ade80; }
+    .feat-card h3 { font-size:1.15rem; margin-bottom:10px; position:relative; z-index:1; }
+    .feat-card p  { font-size:.9rem; color:var(--c-muted); position:relative; z-index:1; line-height:1.7; }
+    .feat-tag {
+      display:inline-block; margin-top:14px; padding:4px 12px; border-radius:99px;
+      font-size:.75rem; font-weight:600; color:#7c5cfc;
+      background:rgba(124,92,252,.12); position:relative; z-index:1;
+    }
+
+    /* ══════════════ HOW IT WORKS ══════════════ */
+    #how { padding:120px 0; }
+    .steps-wrap {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:32px;
+      position:relative;
+    }
+    .steps-wrap::before {
+      content:''; position:absolute;
+      top:36px; left:calc(16.66% + 36px); right:calc(16.66% + 36px);
+      height:2px;
+      background:linear-gradient(90deg, var(--c-blue), var(--c-violet), var(--c-pink));
+      opacity:.3;
+    }
+    .step-card { text-align:center; position:relative; }
+    .step-num {
+      width:72px; height:72px; border-radius:50%; margin:0 auto 24px;
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800;
+      background:var(--g-main); box-shadow:0 0 30px rgba(124,92,252,.3);
+      position:relative; z-index:1;
+    }
+    .step-card h3 { font-size:1.15rem; margin-bottom:10px; }
+    .step-card p { font-size:.9rem; color:var(--c-muted); }
+
+    /* ══════════════ BENEFITS ══════════════ */
+    #benefits { padding:120px 0; position:relative; }
+    .benefits-grid {
+      display:grid; grid-template-columns:5fr 7fr; gap:80px; align-items:center;
+    }
+    .benefits-text h2 { font-size:clamp(1.8rem,3.5vw,2.5rem); margin-bottom:16px; }
+    .benefits-text > p { color:var(--c-muted); margin-bottom:36px; }
+    .benefit-list { display:flex; flex-direction:column; gap:20px; }
+    .benefit-item {
+      display:flex; gap:16px; align-items:flex-start;
+      padding:20px; border-radius:var(--radius-md);
+      background:var(--c-card); border:1px solid var(--c-border);
+      backdrop-filter:blur(12px); transition:var(--t);
+    }
+    .benefit-item:hover { background:rgba(255,255,255,.07); }
+    .benefit-ic {
+      width:44px; height:44px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+    }
+    .benefit-item h4 { font-size:.95rem; font-weight:700; margin-bottom:4px; }
+    .benefit-item p  { font-size:.85rem; color:var(--c-muted); }
+    .benefits-visual { position:relative; }
+    .bv-card {
+      background:var(--c-card); border:1px solid var(--c-border);
+      border-radius:var(--radius-lg); padding:28px;
+      backdrop-filter:blur(16px);
+    }
+    .bv-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .bv-title { font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; }
+    .bv-badge { padding:4px 10px; border-radius:99px; background:rgba(74,222,128,.15); color:#4ade80; font-size:.75rem; font-weight:600; }
+    .interest-cloud { display:flex; flex-wrap:wrap; gap:10px; }
+    .ic-pill {
+      padding:8px 16px; border-radius:99px; font-size:.85rem; font-weight:500;
+      cursor:default; transition:var(--t);
+    }
+    .ic-pill:hover { transform:scale(1.06); }
+    .ip-1 { background:rgba(79,122,255,.2); border:1px solid rgba(79,122,255,.3); color:#7da8ff; }
+    .ip-2 { background:rgba(236,72,153,.2); border:1px solid rgba(236,72,153,.3); color:#f472b6; }
+    .ip-3 { background:rgba(168,85,247,.2); border:1px solid rgba(168,85,247,.3); color:#c084fc; }
+    .ip-4 { background:rgba(6,182,212,.2);  border:1px solid rgba(6,182,212,.3);  color:#22d3ee; }
+    .ip-5 { background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.25);color:#4ade80; }
+    .ip-6 { background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
+    .bv-divider { height:1px; background:var(--c-border); margin:20px 0; }
+    .bv-matches { display:flex; flex-direction:column; gap:12px; }
+    .bv-match-row { display:flex; align-items:center; justify-content:space-between; }
+    .bv-user { display:flex; align-items:center; gap:10px; }
+    .bv-av { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; font-family:'Syne',sans-serif; }
+    .bv-uname { font-size:.88rem; font-weight:600; }
+    .bv-uhobi { font-size:.75rem; color:var(--c-muted); }
+    .match-bar-wrap { flex:1; margin:0 12px; height:4px; background:rgba(255,255,255,.06); border-radius:99px; overflow:hidden; }
+    .match-bar { height:100%; border-radius:99px; background:var(--g-main); }
+    .match-pct { font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700; color:#4ade80; }
+
+    /* ══════════════ TESTIMONIALS ══════════════ */
+    #testimonials { padding:120px 0; position:relative; overflow:hidden; }
+    .testi-bg { position:absolute; inset:0; background:radial-gradient(ellipse 70% 50% at 50% 50%, rgba(168,85,247,.07), transparent); pointer-events:none; }
+    .testi-track-wrap { overflow:hidden; margin-top:0; position:relative; }
+    .testi-track-wrap::before,
+    .testi-track-wrap::after {
+      content:''; position:absolute; top:0; bottom:0; width:100px; z-index:2; pointer-events:none;
+    }
+    .testi-track-wrap::before { left:0; background:linear-gradient(90deg,var(--c-bg),transparent); }
+    .testi-track-wrap::after  { right:0; background:linear-gradient(-90deg,var(--c-bg),transparent); }
+    .testi-track {
+      display:flex; gap:20px;
+      animation: slide 40s linear infinite;
+      width:max-content;
+    }
+    .testi-track:hover { animation-play-state:paused; }
+    @keyframes slide { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+    .testi-card {
+      flex-shrink:0; width:320px;
+      background:var(--c-card); border:1px solid var(--c-border);
+      border-radius:var(--radius-lg); padding:28px;
+      backdrop-filter:blur(12px);
+    }
+    .testi-stars { color:#fbbf24; font-size:.85rem; margin-bottom:12px; }
+    .testi-text { font-size:.92rem; color:var(--c-muted); line-height:1.75; margin-bottom:18px; font-style:italic; }
+    .testi-user { display:flex; align-items:center; gap:12px; }
+    .testi-av { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.9rem; font-weight:700; font-family:'Syne',sans-serif; }
+    .testi-name { font-weight:700; font-size:.9rem; }
+    .testi-role { font-size:.78rem; color:var(--c-muted); }
+
+    /* ══════════════ FAQ ══════════════ */
+    #faq { padding:120px 0; }
+    .faq-grid { max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:12px; }
+    .faq-item {
+      background:var(--c-card); border:1px solid var(--c-border);
+      border-radius:var(--radius-md); overflow:hidden;
+      backdrop-filter:blur(12px); transition:var(--t);
+    }
+    .faq-item.open { border-color:rgba(124,92,252,.3); }
+    .faq-q {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:20px 24px; cursor:pointer; gap:12px;
+    }
+    .faq-q span { font-family:'Syne',sans-serif; font-weight:600; font-size:.95rem; }
+    .faq-chevron { font-size:.75rem; color:var(--c-muted); transition:transform .3s; flex-shrink:0; }
+    .faq-item.open .faq-chevron { transform:rotate(180deg); color:var(--c-violet); }
+    .faq-a {
+      max-height:0; overflow:hidden; transition:max-height .4s ease, padding .3s;
+      color:var(--c-muted); font-size:.9rem; line-height:1.75;
+    }
+    .faq-item.open .faq-a { max-height:200px; padding:0 24px 20px; }
+
+    /* ══════════════ CTA ══════════════ */
+    #cta { padding:120px 0; }
+    .cta-inner {
+      position:relative; border-radius:var(--radius-xl);
+      padding:80px 60px; text-align:center; overflow:hidden;
+      background:var(--g-soft); border:1px solid rgba(124,92,252,.2);
+    }
+    .cta-blob1 { width:400px; height:400px; background:#4f7aff; opacity:.15; top:-100px; right:-100px; }
+    .cta-blob2 { width:400px; height:400px; background:#a855f7; opacity:.15; bottom:-100px; left:-100px; }
+    .cta-inner h2 { font-size:clamp(2rem,4.5vw,3.2rem); position:relative; z-index:1; margin-bottom:16px; }
+    .cta-inner p  { color:var(--c-muted); font-size:1.05rem; max-width:500px; margin:0 auto 36px; position:relative; z-index:1; }
+    .cta-actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; position:relative; z-index:1; }
+    .cta-note { font-size:.8rem; color:var(--c-muted); margin-top:14px; position:relative; z-index:1; }
+
+    /* ══════════════ FOOTER ══════════════ */
+    footer {
+      border-top:1px solid var(--c-border);
+      padding:60px 0 32px;
+    }
+    .footer-grid {
+      display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:48px; margin-bottom:48px;
+    }
+    .footer-brand p { color:var(--c-muted); font-size:.9rem; margin:12px 0 20px; max-width:260px; }
+    .socials { display:flex; gap:10px; }
+    .social-btn {
+      width:38px; height:38px; border-radius:10px; border:1px solid var(--c-border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.9rem; color:var(--c-muted); transition:var(--t);
+      background:var(--c-card);
+    }
+    .social-btn:hover { color:var(--c-text); border-color:rgba(124,92,252,.4); background:rgba(124,92,252,.1); }
+    .footer-col h5 { font-family:'Syne',sans-serif; font-weight:700; margin-bottom:16px; font-size:.9rem; }
+    .footer-col ul { list-style:none; display:flex; flex-direction:column; gap:10px; }
+    .footer-col a { font-size:.88rem; color:var(--c-muted); transition:color .2s; }
+    .footer-col a:hover { color:var(--c-text); }
+    .footer-bottom {
+      display:flex; align-items:center; justify-content:space-between;
+      padding-top:24px; border-top:1px solid var(--c-border);
+      font-size:.82rem; color:var(--c-muted);
+    }
+    .footer-bottom strong { color:var(--c-text); }
+
+    /* ══════════════ RESPONSIVE ══════════════ */
+    @media(max-width:1024px){
+      .hero-content      { grid-template-columns:1fr; gap:48px; }
+      .hero-visual       { display:none; }
+      .about-grid        { grid-template-columns:1fr; gap:40px; }
+      .benefits-grid     { grid-template-columns:1fr; gap:40px; }
+      .features-grid     { grid-template-columns:1fr 1fr; }
+      .feat-card.featured{ grid-column:span 1; }
+      .footer-grid       { grid-template-columns:1fr 1fr; gap:32px; }
+      .steps-wrap::before{ display:none; }
+    }
+    @media(max-width:768px){
+      .nav-links, .nav-cta { display:none; }
+      .burger            { display:flex; }
+      .features-grid     { grid-template-columns:1fr; }
+      .steps-wrap        { grid-template-columns:1fr; gap:24px; }
+      .footer-grid       { grid-template-columns:1fr; gap:28px; }
+      .footer-bottom     { flex-direction:column; gap:8px; text-align:center; }
+      .cta-inner         { padding:48px 24px; }
+      .hero-stats        { flex-wrap:wrap; gap:24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAVBAR ══ -->
+<nav id="navbar">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">Wusyaname</a>
+      <ul class="nav-links">
+        <li><a href="#about">Tentang</a></li>
+        <li><a href="#features">Fitur</a></li>
+        <li><a href="#how">Cara Kerja</a></li>
+        <li><a href="#testimonials">Testimoni</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="#cta" class="btn btn-ghost" style="padding:10px 22px;font-size:.88rem;">Masuk</a>
+        <a href="#cta" class="btn btn-primary" style="padding:10px 22px;font-size:.88rem;"><i class="fa-solid fa-rocket"></i> Daftar Gratis</a>
+      </div>
+      <button class="burger" id="burgerBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about"        onclick="closeMenu()">Tentang</a>
+  <a href="#features"     onclick="closeMenu()">Fitur</a>
+  <a href="#how"          onclick="closeMenu()">Cara Kerja</a>
+  <a href="#testimonials" onclick="closeMenu()">Testimoni</a>
+  <a href="#faq"          onclick="closeMenu()">FAQ</a>
+  <a href="#cta" class="btn btn-primary" onclick="closeMenu()">Daftar Gratis</a>
+</div>
+
+<!-- ══ HERO ══ -->
+<section id="hero">
+  <div class="blob hero-blob-1"></div>
+  <div class="blob hero-blob-2"></div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-left fade-up">
+        <div class="hero-eyebrow">
+          <span class="dot"></span>
+          <span>Platform Koneksi Sosial #1</span>
+        </div>
+        <h1 class="hero-title">
+          Temukan <em class="gradient-text">Teman Sejati</em><br>
+          Berdasarkan Minatmu
+        </h1>
+        <p class="hero-desc">
+          Wusyaname menghubungkanmu dengan orang-orang yang benar-benar satu frekuensi. Tidak perlu keberuntungan — cukup algoritma yang mengerti kamu.
+        </p>
+        <div class="hero-actions">
+          <a href="#cta" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Mulai Gratis Sekarang</a>
+          <a href="#how" class="btn btn-ghost"><i class="fa-solid fa-play"></i> Lihat Cara Kerja</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-num gradient-text">50K+</div>
+            <div class="stat-label">Pengguna Aktif</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num gradient-text">98%</div>
+            <div class="stat-label">Kepuasan Pengguna</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num gradient-text">200+</div>
+            <div class="stat-label">Kategori Minat</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mock App Card -->
+      <div class="hero-visual fade-up" style="transition-delay:.2s">
+        <div class="phone-wrap">
+          <!-- Floating badges -->
+          <div class="floating-card fc-left">
+            <div class="fc-content">
+              <div class="fc-icon blue"><i class="fa-solid fa-bolt"></i></div>
+              <div class="fc-text">
+                <div class="num">95%</div>
+                <div class="lbl">Match Score</div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-card fc-right">
+            <div class="fc-content">
+              <div class="fc-icon green"><i class="fa-solid fa-user-plus"></i></div>
+              <div class="fc-text">
+                <div class="num">+1.2K</div>
+                <div class="lbl">Koneksi Baru</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phone-card">
+            <div class="phone-header">
+              <span class="phone-logo">Wusyaname</span>
+              <span class="phone-notif"></span>
+            </div>
+            <!-- Match card 1 -->
+            <div class="match-card">
+              <div class="match-row">
+                <div class="avatar av-1">AR</div>
+                <div class="match-info">
+                  <div class="match-name">Ariel Ramadhan</div>
+                  <div class="match-tags">
+                    <span class="m-tag">🎸 Musik</span>
+                    <span class="m-tag">🎮 Gaming</span>
+                  </div>
+                </div>
+                <div class="match-score">95%</div>
+              </div>
+            </div>
+            <!-- Match card 2 -->
+            <div class="match-card">
+              <div class="match-row">
+                <div class="avatar av-2">SF</div>
+                <div class="match-info">
+                  <div class="match-name">Sari Fauziyah</div>
+                  <div class="match-tags">
+                    <span class="m-tag">📚 Buku</span>
+                    <span class="m-tag">✈️ Travel</span>
+                  </div>
+                </div>
+                <div class="match-score">91%</div>
+              </div>
+            </div>
+            <!-- Match card 3 -->
+            <div class="match-card" style="margin-bottom:0">
+              <div class="match-row">
+                <div class="avatar av-3">RD</div>
+                <div class="match-info">
+                  <div class="match-name">Reza Dinata</div>
+                  <div class="match-tags">
+                    <span class="m-tag">💻 Tech</span>
+                    <span class="m-tag">🏃 Olahraga</span>
+                  </div>
+                </div>
+                <div class="match-score">88%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ABOUT ══ -->
+<section id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-visual fade-up">
+        <div class="about-orb"></div>
+        <div class="about-icon-grid">
+          <div class="aig-card">
+            <i class="fa-solid fa-users" style="color:#4f7aff"></i>
+            <h4>Komunitas Nyata</h4>
+            <p>Bergabung dengan grup berdasarkan minat sejati kamu</p>
+          </div>
+          <div class="aig-card">
+            <i class="fa-solid fa-brain" style="color:#a855f7"></i>
+            <h4>AI Matching</h4>
+            <p>Algoritma cerdas menemukan orang yang tepat untukmu</p>
+          </div>
+          <div class="aig-card">
+            <i class="fa-solid fa-shield-halved" style="color:#4ade80"></i>
+            <h4>Aman & Terpercaya</h4>
+            <p>Sistem verifikasi dan keamanan berlapis</p>
+          </div>
+          <div class="aig-card">
+            <i class="fa-solid fa-bolt" style="color:#ec4899"></i>
+            <h4>Koneksi Instan</h4>
+            <p>Mulai percakapan hanya dalam hitungan detik</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-text fade-up" style="transition-delay:.15s">
+        <div class="tag"><i class="fa-solid fa-sparkles"></i> Tentang Wusyaname</div>
+        <h2>Pertemanan yang <span class="gradient-text">Bermakna</span> Dimulai dari Sini</h2>
+        <p>
+          Di era digital yang ramai ini, menemukan teman yang benar-benar satu wavelength terasa sulit. Wusyaname hadir sebagai jembatan — platform yang memahami bahwa koneksi terbaik lahir dari kesamaan passion, bukan sekadar kebetulan.
+        </p>
+        <ul class="about-list">
+          <li><i class="fa-solid fa-check-circle"></i> Matching berbasis minat & hobi personal</li>
+          <li><i class="fa-solid fa-check-circle"></i> Profil yang mencerminkan kepribadian aslimu</li>
+          <li><i class="fa-solid fa-check-circle"></i> Komunitas aktif untuk mahasiswa & profesional muda</li>
+          <li><i class="fa-solid fa-check-circle"></i> Privasi terjaga dengan enkripsi end-to-end</li>
+          <li><i class="fa-solid fa-check-circle"></i> Gratis untuk mulai, tanpa komitmen apapun</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FEATURES ══ -->
+<section id="features">
+  <div class="feat-bg"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <div class="section-head fade-up">
+      <div class="tag"><i class="fa-solid fa-layer-group"></i> Fitur Unggulan</div>
+      <h2>Semua yang Kamu Butuhkan<br><span class="gradient-text">dalam Satu Platform</span></h2>
+      <p>Dirancang dengan teknologi terkini agar pengalaman berkoneksimu terasa natural, aman, dan menyenangkan.</p>
+    </div>
+    <div class="features-grid">
+      <!-- Feature 1 - featured -->
+      <div class="feat-card featured fade-up">
+        <div class="feat-icon-wrap fi-blue"><i class="fa-solid fa-heart-pulse"></i></div>
+        <h3>Interest-Based Matching</h3>
+        <p>Sistem matching kami menganalisis ratusan titik data dari profil dan aktivitasmu untuk menemukan orang yang benar-benar cocok. Musik, gaming, film, olahraga, teknologi, seni — lebih dari 200 kategori minat tersedia untuk memastikan koneksimu selalu relevan dan personal.</p>
+        <span class="feat-tag">⚡ Powered by AI</span>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feat-card fade-up" style="transition-delay:.1s">
+        <div class="feat-icon-wrap fi-violet"><i class="fa-solid fa-id-card"></i></div>
+        <h3>Profile Customization</h3>
+        <p>Tampilkan dirimu yang sesungguhnya. Tambahkan minat, hobi, karya, dan aktivitas favoritmu ke profil yang bisa dikustomisasi sepenuhnya.</p>
+        <span class="feat-tag">🎨 Ekspresif</span>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feat-card fade-up" style="transition-delay:.15s">
+        <div class="feat-icon-wrap fi-pink"><i class="fa-solid fa-comments"></i></div>
+        <h3>Chat & Social Interaction</h3>
+        <p>Mulai percakapan yang bermakna dengan fitur chat real-time, reaksi emoji, dan berbagi media dalam satu tempat yang nyaman.</p>
+        <span class="feat-tag">💬 Real-time</span>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feat-card fade-up" style="transition-delay:.2s">
+        <div class="feat-icon-wrap fi-cyan"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h3>Smart Recommendation</h3>
+        <p>Semakin sering kamu aktif, semakin pintar rekomendasinya. Algoritma kami belajar dari preferensimu secara real-time.</p>
+        <span class="feat-tag">🧠 Machine Learning</span>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="feat-card fade-up" style="transition-delay:.25s">
+        <div class="feat-icon-wrap fi-green"><i class="fa-solid fa-shield-check"></i></div>
+        <h3>Safety & Reporting</h3>
+        <p>Kenyamananmu adalah prioritas. Sistem verifikasi, pelaporan cepat, dan moderasi aktif 24/7 menjagamu setiap saat.</p>
+        <span class="feat-tag">🛡️ Terproteksi</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ HOW IT WORKS ══ -->
+<section id="how">
+  <div class="container">
+    <div class="section-head fade-up">
+      <div class="tag"><i class="fa-solid fa-list-ol"></i> Cara Kerja</div>
+      <h2>Mulai Perjalananmu<br><span class="gradient-text">dalam 3 Langkah</span></h2>
+      <p>Tidak perlu setup yang rumit. Dalam hitungan menit, kamu sudah siap terhubung dengan orang-orang baru.</p>
+    </div>
+    <div class="steps-wrap">
+      <div class="step-card fade-up">
+        <div class="step-num">01</div>
+        <h3>Buat Profil Kamu</h3>
+        <p>Daftar gratis dan isi profil dengan minat, hobi, serta foto terbaikmu. Semakin lengkap, semakin akurat matchingnya.</p>
+      </div>
+      <div class="step-card fade-up" style="transition-delay:.1s">
+        <div class="step-num">02</div>
+        <h3>Temukan Matching</h3>
+        <p>Algoritma kami langsung bekerja untuk menemukan orang-orang yang benar-benar cocok berdasarkan kesamaan minatmu.</p>
+      </div>
+      <div class="step-card fade-up" style="transition-delay:.2s">
+        <div class="step-num">03</div>
+        <h3>Mulai Konek!</h3>
+        <p>Kirim pesan, bergabung ke komunitas, dan bangun pertemanan yang bermakna. Sesederhana itu!</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BENEFITS ══ -->
+<section id="benefits">
+  <div class="container">
+    <div class="benefits-grid">
+      <div class="benefits-text fade-up">
+        <div class="tag" style="margin-bottom:16px"><i class="fa-solid fa-star"></i> Kenapa Wusyaname?</div>
+        <h2>Platform yang Benar-benar <span class="gradient-text">Memahami Kamu</span></h2>
+        <p>Bukan sekadar aplikasi pertemanan biasa. Wusyaname didesain untuk menciptakan koneksi yang tahan lama dan bermakna.</p>
+        <div class="benefit-list">
+          <div class="benefit-item">
+            <div class="benefit-ic fi-blue"><i class="fa-solid fa-crosshairs"></i></div>
+            <div>
+              <h4>Matching Akurasi Tinggi</h4>
+              <p>Lebih dari 95% pengguna menemukan teman dengan kesamaan minat dalam 24 jam pertama.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-ic fi-violet"><i class="fa-solid fa-lock"></i></div>
+            <div>
+              <h4>Zero Toxic Zone</h4>
+              <p>Komunitas yang dijaga ketat dengan sistem moderasi dan pelaporan yang transparan.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-ic fi-pink"><i class="fa-solid fa-mobile-screen"></i></div>
+            <div>
+              <h4>Tersedia di Semua Platform</h4>
+              <p>Akses dari browser, iOS, atau Android — pengalaman yang konsisten di mana saja.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-ic fi-green"><i class="fa-solid fa-gift"></i></div>
+            <div>
+              <h4>Gratis Selamanya (Base)</h4>
+              <p>Fitur inti tersedia gratis tanpa batas waktu. Upgrade hanya jika kamu butuh lebih.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="benefits-visual fade-up" style="transition-delay:.15s">
+        <div class="bv-card">
+          <div class="bv-header">
+            <span class="bv-title">Minat Populer Minggu Ini</span>
+            <span class="bv-badge">🔥 Trending</span>
+          </div>
+          <div class="interest-cloud">
+            <span class="ic-pill ip-1">🎸 Musik Indie</span>
+            <span class="ic-pill ip-2">🎮 Gaming</span>
+            <span class="ic-pill ip-3">📸 Fotografi</span>
+            <span class="ic-pill ip-4">💻 Teknologi</span>
+            <span class="ic-pill ip-5">🏃 Olahraga</span>
+            <span class="ic-pill ip-6">✈️ Travel</span>
+            <span class="ic-pill ip-1">🎨 Desain</span>
+            <span class="ic-pill ip-3">📚 Literatur</span>
+            <span class="ic-pill ip-2">🎬 Film</span>
+            <span class="ic-pill ip-5">🍳 Kuliner</span>
+          </div>
+          <div class="bv-divider"></div>
+          <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--c-muted)">Top Match Hari Ini</div>
+          <div class="bv-matches">
+            <div class="bv-match-row">
+              <div class="bv-user">
+                <div class="bv-av av-1">DN</div>
+                <div><div class="bv-uname">Dian N.</div><div class="bv-uhobi">Musik & Film</div></div>
+              </div>
+              <div class="match-bar-wrap"><div class="match-bar" style="width:95%"></div></div>
+              <span class="match-pct">95%</span>
+            </div>
+            <div class="bv-match-row">
+              <div class="bv-user">
+                <div class="bv-av av-2">FH</div>
+                <div><div class="bv-uname">Fariz H.</div><div class="bv-uhobi">Gaming & Tech</div></div>
+              </div>
+              <div class="match-bar-wrap"><div class="match-bar" style="width:89%"></div></div>
+              <span class="match-pct">89%</span>
+            </div>
+            <div class="bv-match-row">
+              <div class="bv-user">
+                <div class="bv-av av-3">RA</div>
+                <div><div class="bv-uname">Rania A.</div><div class="bv-uhobi">Travel & Kuliner</div></div>
+              </div>
+              <div class="match-bar-wrap"><div class="match-bar" style="width:83%"></div></div>
+              <span class="match-pct">83%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TESTIMONIALS ══ -->
+<section id="testimonials">
+  <div class="testi-bg"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <div class="section-head fade-up">
+      <div class="tag"><i class="fa-solid fa-quote-left"></i> Testimoni</div>
+      <h2>Mereka Sudah Merasakan<br><span class="gradient-text">Perbedaannya</span></h2>
+      <p>Ribuan pengguna telah menemukan teman terbaik mereka di Wusyaname. Saatnya giliranmu.</p>
+    </div>
+  </div>
+  <div class="testi-track-wrap">
+    <div class="testi-track" id="testiTrack">
+      <!-- Cards duplicated for seamless loop -->
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Baru seminggu daftar, langsung dapat teman yang sama-sama suka indie music dan ngobrolin film. Rasanya kayak nemuin orang yang udah lama hilang!"</p>
+        <div class="testi-user">
+          <div class="testi-av av-1">AW</div>
+          <div><div class="testi-name">Alya Wijaya</div><div class="testi-role">Mahasiswa, Bandung</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Sebagai introvert yang susah kenalan, Wusyaname itu game changer banget. Sekarang punya 3 teman baru yang satu passion sama gue soal tech dan startup."</p>
+        <div class="testi-user">
+          <div class="testi-av av-2">RF</div>
+          <div><div class="testi-name">Rizal Firmansyah</div><div class="testi-role">Software Engineer, Jakarta</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Platformnya bersih banget dari toxicity. Tim moderasi cepat respond. Rasanya aman buat explore dan kenalan sama orang-orang baru."</p>
+        <div class="testi-user">
+          <div class="testi-av av-3">NS</div>
+          <div><div class="testi-name">Nadia Susanti</div><div class="testi-role">Desainer Grafis, Yogyakarta</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Fitur rekomendasi komunitasnya keren. Gue masuk komunitas photography dan langsung ketemu mentor yang bantu gue berkembang pesat."</p>
+        <div class="testi-user">
+          <div class="testi-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">BP</div>
+          <div><div class="testi-name">Bagas Pratama</div><div class="testi-role">Fotografer Freelance, Surabaya</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Tadinya skeptis, tapi matching score-nya emang akurat. Sekarang ada teman lari bareng tiap pagi yang ketemu dari sini. Sungguh tak terduga!"</p>
+        <div class="testi-user">
+          <div class="testi-av" style="background:linear-gradient(135deg,#10b981,#4f7aff)">MK</div>
+          <div><div class="testi-name">Maya Kusuma</div><div class="testi-role">Profesional Muda, Medan</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"UX-nya smooth banget dan UI-nya elegan. Jarang banget aplikasi sosial yang enak dilihat sekaligus enak dipake. Wusyaname beda level!"</p>
+        <div class="testi-user">
+          <div class="testi-av" style="background:linear-gradient(135deg,#ec4899,#7c5cfc)">TP</div>
+          <div><div class="testi-name">Tania Putri</div><div class="testi-role">UI/UX Designer, Bali</div></div>
+        </div>
+      </div>
+      <!-- Duplicate for loop -->
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Baru seminggu daftar, langsung dapat teman yang sama-sama suka indie music dan ngobrolin film. Rasanya kayak nemuin orang yang udah lama hilang!"</p>
+        <div class="testi-user">
+          <div class="testi-av av-1">AW</div>
+          <div><div class="testi-name">Alya Wijaya</div><div class="testi-role">Mahasiswa, Bandung</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Sebagai introvert yang susah kenalan, Wusyaname itu game changer banget. Sekarang punya 3 teman baru yang satu passion sama gue soal tech dan startup."</p>
+        <div class="testi-user">
+          <div class="testi-av av-2">RF</div>
+          <div><div class="testi-name">Rizal Firmansyah</div><div class="testi-role">Software Engineer, Jakarta</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Platformnya bersih banget dari toxicity. Tim moderasi cepat respond. Rasanya aman buat explore dan kenalan sama orang-orang baru."</p>
+        <div class="testi-user">
+          <div class="testi-av av-3">NS</div>
+          <div><div class="testi-name">Nadia Susanti</div><div class="testi-role">Desainer Grafis, Yogyakarta</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Fitur rekomendasi komunitasnya keren. Gue masuk komunitas photography dan langsung ketemu mentor yang bantu gue berkembang pesat."</p>
+        <div class="testi-user">
+          <div class="testi-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">BP</div>
+          <div><div class="testi-name">Bagas Pratama</div><div class="testi-role">Fotografer Freelance, Surabaya</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Tadinya skeptis, tapi matching score-nya emang akurat. Sekarang ada teman lari bareng tiap pagi yang ketemu dari sini. Sungguh tak terduga!"</p>
+        <div class="testi-user">
+          <div class="testi-av" style="background:linear-gradient(135deg,#10b981,#4f7aff)">MK</div>
+          <div><div class="testi-name">Maya Kusuma</div><div class="testi-role">Profesional Muda, Medan</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"UX-nya smooth banget dan UI-nya elegan. Jarang banget aplikasi sosial yang enak dilihat sekaligus enak dipake. Wusyaname beda level!"</p>
+        <div class="testi-user">
+          <div class="testi-av" style="background:linear-gradient(135deg,#ec4899,#7c5cfc)">TP</div>
+          <div><div class="testi-name">Tania Putri</div><div class="testi-role">UI/UX Designer, Bali</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FAQ ══ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-head fade-up">
+      <div class="tag"><i class="fa-solid fa-circle-question"></i> FAQ</div>
+      <h2>Pertanyaan yang<br><span class="gradient-text">Sering Ditanyakan</span></h2>
+      <p>Belum ada jawaban yang kamu cari? Hubungi tim kami — kami siap membantu 24/7.</p>
+    </div>
+    <div class="faq-grid fade-up">
+      <div class="faq-item open">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Apakah Wusyaname benar-benar gratis?</span>
+          <i class="fa-solid fa-chevron-down faq-chevron"></i>
+        </div>
+        <div class="faq-a">Ya! Fitur inti Wusyaname — termasuk matching, chat, dan profil — sepenuhnya gratis tanpa batas waktu. Kami juga menyediakan paket Premium untuk fitur-fitur eksklusif seperti unlimited match, analytics profil, dan prioritas rekomendasi.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Bagaimana cara kerja sistem matching-nya?</span>
+          <i class="fa-solid fa-chevron-down faq-chevron"></i>
+        </div>
+        <div class="faq-a">Algoritma kami menganalisis minat, hobi, aktivitas, dan preferensimu untuk menghasilkan skor kompatibilitas dengan pengguna lain. Semakin aktif kamu menggunakan platform, semakin akurat rekomendasinya karena sistem kami terus belajar dari aktivitasmu.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Apakah data saya aman di Wusyaname?</span>
+          <i class="fa-solid fa-chevron-down faq-chevron"></i>
+        </div>
+        <div class="faq-a">Keamanan data adalah prioritas utama kami. Semua data dienkripsi dengan standar AES-256 dan percakapan dilindungi dengan enkripsi end-to-end. Kami tidak pernah menjual data pengguna kepada pihak ketiga manapun.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Apakah ada batasan usia untuk mendaftar?</span>
+          <i class="fa-solid fa-chevron-down faq-chevron"></i>
+        </div>
+        <div class="faq-a">Wusyaname terbuka untuk pengguna berusia 17 tahun ke atas. Untuk pengguna di bawah 18 tahun, beberapa fitur tertentu mungkin dibatasi demi keamanan. Kami berkomitmen menciptakan lingkungan yang aman untuk semua kelompok usia.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Bagaimana cara melaporkan pengguna yang tidak nyaman?</span>
+          <i class="fa-solid fa-chevron-down faq-chevron"></i>
+        </div>
+        <div class="faq-a">Kamu bisa melaporkan pengguna langsung dari profil atau percakapan mereka dengan menekan tombol "Laporkan". Tim moderasi kami akan menindaklanjuti dalam 24 jam. Kamu juga bisa langsung memblokir pengguna untuk menghentikan kontak seketika.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Tersedia di platform apa saja Wusyaname?</span>
+          <i class="fa-solid fa-chevron-down faq-chevron"></i>
+        </div>
+        <div class="faq-a">Wusyaname tersedia sebagai web app yang bisa diakses dari browser apapun, serta aplikasi mobile untuk iOS dan Android. Semua platform tersinkronisasi secara real-time sehingga kamu tidak akan melewatkan satu pun notifikasi penting.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-inner">
+      <div class="blob cta-blob1"></div>
+      <div class="blob cta-blob2"></div>
+      <div class="tag" style="margin-bottom:16px;position:relative;z-index:1"><i class="fa-solid fa-rocket"></i> Bergabung Sekarang</div>
+      <h2>Temukan Teman <span class="gradient-text">Idealmu</span><br>Mulai Hari Ini</h2>
+      <p>Bergabunglah dengan lebih dari 50.000 pengguna yang sudah menemukan koneksi bermakna di Wusyaname. Gratis, mudah, dan menyenangkan.</p>
+      <div class="cta-actions">
+        <a href="#" class="btn btn-primary" style="padding:16px 36px;font-size:1rem"><i class="fa-solid fa-arrow-right"></i> Daftar Gratis Sekarang</a>
+        <a href="#features" class="btn btn-ghost" style="padding:16px 36px;font-size:1rem"><i class="fa-solid fa-eye"></i> Pelajari Fitur</a>
+      </div>
+      <div class="cta-note">✓ Tidak perlu kartu kredit &nbsp;&nbsp; ✓ Setup dalam 2 menit &nbsp;&nbsp; ✓ Batalkan kapan saja</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo" style="font-size:1.4rem">Wusyaname</div>
+        <p>Platform digital yang menghubungkan kamu dengan teman-teman baru berdasarkan minat dan passion yang sama.</p>
+        <div class="socials">
+          <a href="#" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" class="social-btn"><i class="fa-brands fa-tiktok"></i></a>
+          <a href="#" class="social-btn"><i class="fa-brands fa-twitter"></i></a>
+          <a href="#" class="social-btn"><i class="fa-brands fa-linkedin"></i></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h5>Produk</h5>
+        <ul>
+          <li><a href="#">Fitur</a></li>
+          <li><a href="#">Harga</a></li>
+          <li><a href="#">Roadmap</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Perusahaan</h5>
+        <ul>
+          <li><a href="#">Tentang Kami</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Karir</a></li>
+          <li><a href="#">Press Kit</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Dukungan</h5>
+        <ul>
+          <li><a href="#">Pusat Bantuan</a></li>
+          <li><a href="#">Kebijakan Privasi</a></li>
+          <li><a href="#">Syarat Layanan</a></li>
+          <li><a href="#">Hubungi Kami</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 <strong>Wusyaname</strong>. Dibuat dengan ❤️ di Indonesia.</span>
+      <span>Versi 1.0 · Semua hak dilindungi</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ── Navbar scroll ── */
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  /* ── Burger ── */
+  const burgerBtn  = document.getElementById('burgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  let menuOpen = false;
+  function closeMenu() { menuOpen = false; mobileMenu.classList.remove('open'); }
+  burgerBtn.addEventListener('click', () => {
+    menuOpen = !menuOpen;
+    mobileMenu.classList.toggle('open', menuOpen);
+  });
+
+  /* ── Intersection Observer (fade-up) ── */
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  /* ── FAQ accordion ── */
+  function toggleFaq(el) {
+    const item = el.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  /* ── Staggered fade-up for child lists ── */
+  document.querySelectorAll('.features-grid .feat-card, .steps-wrap .step-card').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.08) + 's';
+  });
+</script>
+</body>
+</html>
