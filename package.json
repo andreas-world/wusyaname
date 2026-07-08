@@ -1,0 +1,13 @@
+{
+  "name": "wusyaname-dashboard",
+  "version": "1.0.0",
+  "description": "Landing page Wusyaname + dashboard admin sederhana (tanpa WordPress)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0"
+  }
+}
