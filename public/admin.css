@@ -104,9 +104,17 @@ h2 i { color: var(--c-indigo); }
 }
 
 .stat-field { background: rgba(255,255,255,.03); border:1px solid var(--c-border); border-radius: var(--radius-sm); padding:12px; }
-.stat-field label { font-size:.75rem; }
-.stat-field input { margin-bottom:8px; }
+.stat-field label { display:block; font-size:.75rem; color: var(--c-muted); margin-bottom:6px; }
+.stat-field input {
+  width:100%; margin-bottom:10px; padding: 10px 13px;
+  background: rgba(255,255,255,.04); border:1px solid var(--c-border);
+  border-radius: var(--radius-sm); color: var(--c-text);
+  font-family:'DM Sans',sans-serif; font-size:.9rem;
+}
 .stat-field input:last-child { margin-bottom:0; }
+.stat-field input:focus, .field input:focus, .field textarea:focus, .login-card input:focus {
+  outline: none; border-color: var(--c-indigo); background: rgba(124,92,252,.06);
+}
 
 .entry-card {
   background: rgba(255,255,255,.03); border:1px solid var(--c-border);
