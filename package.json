@@ -1,0 +1,12 @@
+{
+  "name": "wusyaname-dashboard",
+  "version": "2.0.0",
+  "description": "Landing page Wusyaname + dashboard admin, siap deploy di Vercel (storage Upstash Redis).",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.0"
+  }
+}
